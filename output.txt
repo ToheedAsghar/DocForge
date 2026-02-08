@@ -1,0 +1,230 @@
+First query (cold cache)...
+[INFO]	Cache service initialized and connected to Redis at redis://localhost:6379
+[CACHE MISS]	Query: What's Manus in detail of more than 500 characters...
+[INFO]	No cached result found. Running workflow...
+[INFO]	Starting RAG Workflow for Query: What's Manus in detail of more than 500 characters...
+
+============================================================
+Routing Agent
+============================================================
+[LLM CLIENT]	Initialized with provider: gpt
+[INFO]	SEARCH QUERY: Manus detailed information
+Query Type:	simple_lookup
+Search Query:	Manus detailed information
+Confidence:	0.85
+Reasoning:	The query asks for detailed information about 'Manus', which indicates a straightforward factual inquiry. It does not require complex reasoning or synthesis of multiple concepts, thus fitting the SIMPLE_LOOKUP category.
+
+============================================================
+Retrieval Agent
+============================================================
+[INFO]	Retrieving 3 documents for query: Manus detailed information...
+[INFO]	(Optimized from original: What's Manus in detail of more than 500 characters...)
+[INFO]	Using existing index: techdoc-intelligence
+[DEBUG]	Pinecone returned 3 matches
+[DEBUG]	  - doc_2_chunk_0: score=0.579
+[DEBUG]	  - doc_1_chunk_0: score=0.579
+[DEBUG]	  - doc_1_chunk_5: score=0.409
+[INFO]	Retrieved 3 documents
+[INFO]	[1] Score: 0.579
+[INFO]	ID: doc_2_chunk_0
+[INFO]	TEXT: Manus AI Architecture: A Detailed
+Workﬂow
+This document explains the complete, step-by-step process ...
+[INFO]	[2] Score: 0.579
+[INFO]	ID: doc_1_chunk_0
+[INFO]	TEXT: Manus AI Architecture: A Detailed
+Workﬂow
+This document explains the complete, step-by-step process ...
+[INFO]	[3] Score: 0.409
+[INFO]	ID: doc_1_chunk_5
+[INFO]	TEXT: It checks if the result
+matches what was expected. If an error occurred (e.g., a website was down), ...
+
+============================================================
+Analysis Agent
+============================================================
+[INFO]	Analyzing 3 documents for query: What's Manus in detail of more than 500 characters...
+[INFO]	Combining 3 documents into context...
+[INFO]	Context Length: 2293 characters
+[LLM CLIENT]	Initialized with provider: gpt
+[INFO]	Synthesized Answer: Manus is an advanced AI architecture designed to function as a digital assistant, capable of autonom...
+[INFO]	Information Gaps: []
+[INFO]	Confidence: 0.90
+[INFO]	Running validation (avg_score=0.52, sources=3, gaps=0)
+
+============================================================
+Validation Agent
+============================================================
+[INFO]	Validating answer 1063 characters
+[INFO]	Against 3 source documents
+[INFO]	Retry Count: 0
+[LLM CLIENT]	Initialized with provider: gpt
+[WARNING]	Validation Failed
+[WARNING]	Unsupported Claims: 4
+[WARNING]	High Severity Claims: 0
+[WARNING]	Contradictions: 0
+[INFO]	Will Retry Retrieval (attempt 1)
+[INFO]	Will Retry Retrieval (attempt 2)
+
+============================================================
+Retrieval Agent
+============================================================
+[INFO]	Retry# 1, adapting strategy...
+[INFO]	Retrieval Strategy: semantic_relaxed
+[INFO]	Min Score: 0.0425
+[INFO]	Top K: 4
+[INFO]	Retrieving 4 documents for query: Manus detailed information...
+[INFO]	(Optimized from original: What's Manus in detail of more than 500 characters...)
+[DEBUG]	Pinecone returned 4 matches
+[DEBUG]	  - doc_2_chunk_0: score=0.579
+[DEBUG]	  - doc_1_chunk_0: score=0.579
+[DEBUG]	  - doc_2_chunk_5: score=0.409
+[DEBUG]	  - doc_1_chunk_5: score=0.409
+[INFO]	Retrieved 4 documents
+[INFO]	[1] Score: 0.579
+[INFO]	ID: doc_2_chunk_0
+[INFO]	TEXT: Manus AI Architecture: A Detailed
+Workﬂow
+This document explains the complete, step-by-step process ...
+[INFO]	[2] Score: 0.579
+[INFO]	ID: doc_1_chunk_0
+[INFO]	TEXT: Manus AI Architecture: A Detailed
+Workﬂow
+This document explains the complete, step-by-step process ...
+[INFO]	[3] Score: 0.409
+[INFO]	ID: doc_2_chunk_5
+[INFO]	TEXT: It checks if the result
+matches what was expected. If an error occurred (e.g., a website was down), ...
+[INFO]	[4] Score: 0.409
+[INFO]	ID: doc_1_chunk_5
+[INFO]	TEXT: It checks if the result
+matches what was expected. If an error occurred (e.g., a website was down), ...
+
+============================================================
+Analysis Agent
+============================================================
+[INFO]	Analyzing 4 documents for query: What's Manus in detail of more than 500 characters...
+[INFO]	Combining 4 documents into context...
+[INFO]	Context Length: 3020 characters
+[INFO]	Synthesized Answer: Manus is an advanced AI architecture designed to function as a digital assistant, capable of autonom...
+[INFO]	Information Gaps: []
+[INFO]	Confidence: 0.90
+[INFO]	Running validation (avg_score=0.49, sources=4, gaps=0)
+
+============================================================
+Validation Agent
+============================================================
+[INFO]	Validating answer 1143 characters
+[INFO]	Against 4 source documents
+[INFO]	Retry Count: 1
+[WARNING]	Validation Failed
+[WARNING]	Unsupported Claims: 7
+[WARNING]	High Severity Claims: 0
+[WARNING]	Contradictions: 0
+[INFO]	Will Retry Retrieval (attempt 2)
+[INFO]	Will Retry Retrieval (attempt 3)
+
+============================================================
+Retrieval Agent
+============================================================
+[INFO]	Retry# 2, adapting strategy...
+[INFO]	Retrieval Strategy: semantic_relaxed
+[INFO]	Min Score: 0.0425
+[INFO]	Top K: 4
+[INFO]	Retrieving 4 documents for query: Manus detailed information...
+[INFO]	(Optimized from original: What's Manus in detail of more than 500 characters...)
+[DEBUG]	Pinecone returned 4 matches
+[DEBUG]	  - doc_2_chunk_0: score=0.579
+[DEBUG]	  - doc_1_chunk_0: score=0.579
+[DEBUG]	  - doc_2_chunk_5: score=0.409
+[DEBUG]	  - doc_1_chunk_5: score=0.409
+[INFO]	Retrieved 4 documents
+[INFO]	[1] Score: 0.579
+[INFO]	ID: doc_2_chunk_0
+[INFO]	TEXT: Manus AI Architecture: A Detailed
+Workﬂow
+This document explains the complete, step-by-step process ...
+[INFO]	[2] Score: 0.579
+[INFO]	ID: doc_1_chunk_0
+[INFO]	TEXT: Manus AI Architecture: A Detailed
+Workﬂow
+This document explains the complete, step-by-step process ...
+[INFO]	[3] Score: 0.409
+[INFO]	ID: doc_2_chunk_5
+[INFO]	TEXT: It checks if the result
+matches what was expected. If an error occurred (e.g., a website was down), ...
+[INFO]	[4] Score: 0.409
+[INFO]	ID: doc_1_chunk_5
+[INFO]	TEXT: It checks if the result
+matches what was expected. If an error occurred (e.g., a website was down), ...
+
+============================================================
+Analysis Agent
+============================================================
+[INFO]	Analyzing 4 documents for query: What's Manus in detail of more than 500 characters...
+[INFO]	Combining 4 documents into context...
+[INFO]	Context Length: 3020 characters
+[INFO]	Synthesized Answer: Manus is an advanced AI architecture designed to function as a digital assistant, capable of autonom...
+[INFO]	Information Gaps: []
+[INFO]	Confidence: 0.90
+[INFO]	Running validation (avg_score=0.49, sources=4, gaps=0)
+
+============================================================
+Validation Agent
+============================================================
+[INFO]	Validating answer 1063 characters
+[INFO]	Against 4 source documents
+[INFO]	Retry Count: 2
+[WARNING]	Validation Failed
+[WARNING]	Unsupported Claims: 6
+[WARNING]	High Severity Claims: 0
+[WARNING]	Contradictions: 0
+[INFO]	Will Retry Retrieval (attempt 3)
+[INFO]	MAX retries reached. Returning to corrected answer.
+[LLM CLIENT]	Initialized with provider: gpt
+[INFO]	Caching result...
+[INFO]	Validation passed. Caching result...
+[CACHE SET]	Query: What's Manus in detail of more than 500 characters...
+[INFO]	Workflow Completed in 71653.12ms
+[INFO]	Total Tokens Used: 0
+[INFO]	Retry Count: 3
+[INFO]	Documents Retrieved: 4
+[INFO]	Validation Passed: False
+[INFO]	Agent Steps: 10
+[INFO]	Final Answer: Manus is an advanced AI architecture designed to function as a digital assistant, capable of autonom...
+Time: 71.73s
+
+
+
+
+
+
+[INFO]	Result: Manus is an advanced AI architecture designed to function as a digital assistant, capable of autonomously executing tasks in a secure environment. The core concept of Manus is the 'Agentic Loop,' which allows it to not only receive user requests but also to create a structured plan for execution. This process is divided into six distinct layers, ensuring safety and accuracy in handling requests. When a task is initiated, Manus utilizes various tools, such as web browsers and code editors, to carry out the work. The workflow includes a critical evaluation stage where results are checked against expectations, and if discrepancies arise (like a website being down), Manus can adapt by trying alternative approaches. The finalization stage involves gathering all relevant files and data, ensuring that all requirements are met before delivering the complete answer and any attachments to the user. This layered architecture emphasizes efficiency and autonomy in task execution, making Manus a robust digital assistant [Source 1][Source 2][Source 3][Source 4].
+
+
+
+
+
+
+
+Second query (warm cache)...
+[CACHE HIT]	Query: What's Manus in detail of more than 500 characters...
+[INFO]	Returning cached result for: What's Manus in detail of more than 500 characters...
+[INFO]	Skipping workflow execution.
+Time: 0.00s
+
+Speedup: 72494.5x faster!
+From cache: True
+
+
+
+
+
+
+[INFO]	Result: Manus is an advanced AI architecture designed to function as a digital assistant, capable of autonomously executing tasks in a secure environment. The core concept of Manus is the 'Agentic Loop,' which allows it to not only receive user requests but also to create a structured plan for execution. This process is divided into six distinct layers, ensuring safety and accuracy in handling requests. When a task is initiated, Manus utilizes various tools, such as web browsers and code editors, to carry out the work. The workflow includes a critical evaluation stage where results are checked against expectations, and if discrepancies arise (like a website being down), Manus can adapt by trying alternative approaches. The finalization stage involves gathering all relevant files and data, ensuring that all requirements are met before delivering the complete answer and any attachments to the user. This layered architecture emphasizes efficiency and autonomy in task execution, making Manus a robust digital assistant [Source 1][Source 2][Source 3][Source 4].
+
+
+
+
+
+
