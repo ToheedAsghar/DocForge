@@ -1,10 +1,14 @@
-# DocForge
+<h1 align="center">DocForge</h1>
 
-A **Multi-Agent Retrieval-Augmented Generation (RAG) system** built with LangGraph, featuring intelligent query routing, adaptive retrieval, fact-checking with automatic retry logic, and a FastAPI backend.
+<p align="center">
+A <strong>Multi-Agent Retrieval-Augmented Generation (RAG) system</strong> built with LangGraph, featuring intelligent query routing, adaptive retrieval, fact-checking with automatic retry logic, and a FastAPI backend.
+</p>
 
-![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)
-![LangGraph](https://img.shields.io/badge/LangGraph-0.0.20+-green.svg)
-![License](https://img.shields.io/badge/License-MIT-yellow.svg)
+<p align="center">
+<img src="https://img.shields.io/badge/Python-3.11+-blue.svg" alt="Python">
+<img src="https://img.shields.io/badge/LangGraph-0.0.20+-green.svg" alt="LangGraph">
+<img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License">
+</p>
 
 ## Key Features
 
