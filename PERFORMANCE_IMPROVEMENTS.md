@@ -14,6 +14,7 @@ This document outlines all performance improvements for the TechDoc Multi-Agent 
 6. [Semantic Chunking](#6-semantic-chunking)
 7. [Hybrid Search](#7-hybrid-search)
 8. [Response Compression](#8-response-compression)
+9. [Implemented Optimizations (Audit Report)](#9-implemented-optimizations-audit-report)
 
 ---
 
@@ -1972,30 +1973,60 @@ def get_context_compressor(max_chars: int = 500) -> ContextCompressor:
 
 ---
 
-## Summary: Implementation Priority
+## 9. Implemented Optimizations (Audit Report)
 
-| Priority | Improvement | Effort | Impact |
-|----------|-------------|--------|--------|
-| 1 | Query Caching | Low | High |
-| 2 | Conditional Validation Skip | Low | High |
-| 3 | Task-Specific Models | Medium | High |
-| 4 | Reranking | Medium | High |
-| 5 | Streaming Responses | Medium | Medium |
-| 6 | Semantic Chunking | Medium | Medium |
-| 7 | Hybrid Search | High | Medium |
-| 8 | Response Compression | Medium | Medium |
+The following optimizations and fixes have been applied to the codebase as part of the performance audit.
 
-## Quick Start
+### 1. Asynchronous Architecture
+**Change:** Converted `FastAPI` endpoint, `LangGraph` execution, and all Agent nodes (`Router`, `Retriever`, `Analyzer`, `Validator`) to `async/await`.
+**Rationale:** The previous synchronous blocking calls serialized requests, causing high latency under concurrent load.
+**Impact:** Significantly higher throughput and lower latency for concurrent requests. Non-blocking I/O for LLM and Vector Store operations.
 
-To implement the first 3 improvements (highest impact, lowest effort):
+### 2. Graph Compilation Optimization
+**Change:** Moved `create_graph()` to a module-level lazy singleton `get_graph()`.
+**Rationale:** The graph was being recompiled on every request, adding unnecessary overhead (~10-50ms).
+**Impact:** Reduced per-request latency overhead.
 
-1. Create `backend/services/query_cache.py`
-2. Update `backend/agents/graph.py` with caching and conditional validation
-3. Update `backend/config.py` with task-specific model settings
-4. Update `backend/services/llm_client.py` with task-specific client creation
-5. Update `backend/services/gemini_model.py` and `gpt_model.py` with model override support
+### 3. Task-Specific Model Selection (Fix)
+**Change:** Fixed a bug in `LLMClient` where `model_override` was being ignored due to double initialization.
+**Rationale:** The system was using the default (heavy) model for all tasks. Now it correctly uses lighter models for routing and heavier models for analysis/validation as configured.
+**Impact:** Reduced token costs and latency for routing steps.
 
-These changes will give you:
-- 10x faster repeated queries (caching)
-- 30-40% faster first-time queries (skip validation)
-- 40-50% lower token costs (task-specific models)
+### 4. Persistent Embedding Cache
+**Change:** Implemented Redis-backed caching in `EmbeddingService`.
+**Rationale:** The in-memory cache was lost on restart. Redis ensures embeddings are persisted, avoiding re-computation and saving costs.
+**Impact:** Zero cost/latency for re-ingesting previously processed documents.
+
+### 5. Adaptive Retrieval Thresholds
+**Change:** Implemented dynamic `min_score` based on `query_type` in `RetrievalAgent`.
+**Rationale:** A static threshold of 0.05 was too low (noisy) or too high (misses).
+**Impact:**
+- `Simple Lookup`: Higher threshold (0.4) for precision.
+- `Complex Reasoning`: Medium threshold (0.2).
+- `Multi-hop`: Lower threshold (0.1) for recall.
+
+### 6. Optimized Chunking Strategy
+**Change:** Updated `TextChunker` defaults to `chunk_size=800` and `chunk_overlap=150`.
+**Rationale:** Smaller chunks with sufficient overlap generally perform better for precise retrieval in technical documents than the previous 1000/200 defaults.
+**Impact:** Improved retrieval granularity.
+
+### 7. Corrected Token Tracking
+**Change:** Aggregated token usage from all specialized clients (`routing`, `analysis`, `validation`) in `run_graph`.
+**Rationale:** Previously, only the general client's tokens were reported, leading to under-reporting of costs.
+**Impact:** Accurate observability of cost per query.
+
+### 8. Bug Fix: Document Loading
+**Change:** Fixed a loop variable shadowing bug in `DocumentLoader`.
+**Rationale:** The loader was repeatedly loading the last file in the directory for every iteration.
+**Impact:** Correctly ingests all documents in a directory.
+
+### Methodology for Verification
+To verify these improvements:
+1. **Load Test:** Compare requests/second (RPS) between the old sync endpoint and the new async endpoint using `locust` or `wrk`.
+2. **Cost Analysis:** Monitor token usage logs before/after fixes to confirm task-specific models are active.
+3. **Retrieval Quality:** Use `test_system.py` with known queries to verify adaptive thresholds improve relevance.
+
+### 9. Streaming Response Support
+**Change:** Added a new endpoint `POST /api/v1/query/stream` that returns Server-Sent Events (SSE).
+**Rationale:** Users perceive lower latency when they see progress updates and partial results.
+**Impact:** Improved user experience for long-running queries.

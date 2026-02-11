@@ -4,12 +4,13 @@ WHY: The quality of retrieval directly impacts the answer quality.
 """
 
 import time
+import asyncio
 from typing import Dict
 from backend.config import settings
 from backend.services.vector_store import get_vector_store
 from backend.agents.state import AgentStep, DocumentChunk, GraphState
 
-def retrieve_documents(state: GraphState) -> Dict:
+async def retrieve_documents(state: GraphState) -> Dict:
     """
     Get Relevant Documents from PINECONE Vector Database
     
@@ -41,7 +42,14 @@ def retrieve_documents(state: GraphState) -> Dict:
 
     # Adaptive Retrieval Strategy for Retries
     retrieval_strategy = "semantic" # Default: Vector Similarity Search
-    min_score = settings.RELEVANCE_THRESHOLD
+
+    # Optimize threshold based on query type
+    min_score_map = {
+        "simple_lookup": 0.40,
+        "complex_reasoning": 0.20,
+        "multi_hop": 0.10
+    }
+    min_score = min_score_map.get(query_type.lower(), settings.RELEVANCE_THRESHOLD)
 
     if retry_cnt > 0:
         print(f"[INFO]\tRetry# {retry_cnt}, adapting strategy...")
@@ -64,10 +72,15 @@ def retrieve_documents(state: GraphState) -> Dict:
 
     vector_store = get_vector_store()
     try:
-        raw_results = vector_store.search(
-            query=search_query,
-            top_k=top_k,
-            min_score=min_score
+        # Run synchronous vector search in a thread pool to avoid blocking the event loop
+        loop = asyncio.get_running_loop()
+        raw_results = await loop.run_in_executor(
+            None,
+            lambda: vector_store.search(
+                query=search_query,
+                top_k=top_k,
+                min_score=min_score
+            )
         )
     except Exception as e:
         print(f"[ERROR]\tFailed to retrieve documents: {str(e)}")

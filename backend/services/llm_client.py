@@ -44,14 +44,6 @@ class LLMClient:
         else:
             raise ValueError(f"Unknown LLM provider: {self.provider}. Use 'gemini' or 'gpt'.")
 
-        # Initialize the appropriate model based on provider
-        if self.provider.lower() == "gemini":
-            self._model = GeminiModel()
-        elif self.provider.lower() == "gpt":
-            self._model = GPTModel()
-        else:
-            raise ValueError(f"Unknown LLM provider: {self.provider}. Use 'gemini' or 'gpt'.")
-
         print(f"[LLM CLIENT]\tInitialized with provider: {self.provider}")
 
     def _get_task_model(self, task:  TaskType) -> Optional[str]:

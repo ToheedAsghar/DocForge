@@ -12,6 +12,7 @@ USAGE:
 
 import os
 import sys
+import asyncio
 from pathlib import Path
 
 # Add backend to path
@@ -107,7 +108,7 @@ def main():
         print("-" * 60)
         
         try:
-            result = run_graph(question)
+            result = asyncio.run(run_graph(question))
             
             print(f"\nAnswer:")
             print(result['fact_checked_answer'])
@@ -144,7 +145,7 @@ def main():
             
             print("\n🤔 Processing...\n")
             
-            result = run_graph(question)
+            result = asyncio.run(run_graph(question))
             
             print("Answer:")
             print(result['fact_checked_answer'])

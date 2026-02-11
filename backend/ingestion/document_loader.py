@@ -101,7 +101,7 @@ class DocumentLoader:
             try:
                 print(f"[INFO]\tProcessing Document {i} of {len(supported_documents)}: {filepath.name}...")
     
-                doc = self.load_file(str(file_path))
+                doc = self.load_file(str(filepath))
                 documents.append(doc)
 
                 print(f"[INFO] Successfully loaded {len(doc.content)} characters from {filepath.name}")            

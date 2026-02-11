@@ -3,9 +3,10 @@ EMBEDDING SERVICE
 Convert Text to Vector Embeddings using OpenRouter (OpenAI-compatible API).
 """
 
+import json
 import hashlib
 from openai import OpenAI
-from typing import List, Dict
+from typing import List, Dict, Optional
 from backend.config import settings
 
 class EmbeddingService:
@@ -21,7 +22,24 @@ class EmbeddingService:
         self.model = settings.EMBEDDING_MODEL
         self.dimension = settings.EMBEDDING_DIMENSIONS
 
-        # In-memory cache to avoid re-embedding same text
+        # Redis connection for persistent caching
+        self.redis_client = None
+        if settings.CACHE_ENABLED:
+            try:
+                import redis
+                self.redis_client = redis.from_url(
+                    settings.REDIS_URL,
+                    decode_responses=True,
+                    socket_connect_timeout=2,
+                    socket_timeout=2
+                )
+                self.redis_client.ping()
+                print(f"[INFO]\tEmbedding Service connected to Redis.")
+            except Exception as e:
+                print(f"[WARNING]\tEmbedding Service failed to connect to Redis: {str(e)}")
+                self.redis_client = None
+
+        # Fallback in-memory cache
         self.cache: Dict[str, List[float]] = {}
 
     def get_cache_key(self, text: str) -> str:
@@ -29,15 +47,40 @@ class EmbeddingService:
         Generate Cache Key from Text
         Uses MD5 hash to create consistent keys for identical text.
         """
-        return hashlib.md5(text.encode('utf-8')).hexdigest()
+        return "emb:" + hashlib.md5(text.encode('utf-8')).hexdigest()
+
+    def _get_from_cache(self, key: str) -> Optional[List[float]]:
+        # Try Redis first
+        if self.redis_client:
+            try:
+                data = self.redis_client.get(key)
+                if data:
+                    return json.loads(data)
+            except Exception:
+                pass
+
+        # Try in-memory
+        return self.cache.get(key)
+
+    def _save_to_cache(self, key: str, embedding: List[float]):
+        # Save to in-memory
+        self.cache[key] = embedding
+
+        # Save to Redis
+        if self.redis_client:
+            try:
+                self.redis_client.set(key, json.dumps(embedding), ex=86400*7) # 7 days TTL
+            except Exception:
+                pass
 
     def embed_text(self, text: str) -> List[float]:
         """
         Generate Embedding for a Single Text
         """
         cache_key = self.get_cache_key(text)
-        if cache_key in self.cache:
-            return self.cache[cache_key]
+        cached_embedding = self._get_from_cache(cache_key)
+        if cached_embedding:
+            return cached_embedding
         
         try:
             result = self.client.embeddings.create(
@@ -46,7 +89,7 @@ class EmbeddingService:
             )
 
             embedding = result.data[0].embedding
-            self.cache[cache_key] = embedding
+            self._save_to_cache(cache_key, embedding)
 
             return embedding
         except Exception as e:
@@ -66,8 +109,9 @@ class EmbeddingService:
 
         for i, text in enumerate(texts):    
             cache_key = self.get_cache_key(text)
-            if cache_key in self.cache:
-                results[i] = self.cache[cache_key]
+            cached_embedding = self._get_from_cache(cache_key)
+            if cached_embedding:
+                results[i] = cached_embedding
             else:
                 uncached_texts.append(text)
                 uncached_indices.append(i)
@@ -94,7 +138,7 @@ class EmbeddingService:
 
                         # Cache this embedding
                         cache_key = self.get_cache_key(batch[i])
-                        self.cache[cache_key] = embedding
+                        self._save_to_cache(cache_key, embedding)
                     
             except Exception as e:
                 print(f"[EMBEDDING BATCH ERROR]\t{str(e)}")
