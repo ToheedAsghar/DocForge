@@ -11,7 +11,7 @@ from typing import Dict
 from backend.agents.state import GraphState, AgentStep
 from backend.services.llm_client import get_routing_client
 
-def router_query(state: GraphState) -> Dict:
+async def router_query(state: GraphState) -> Dict:
     """
     Classify the query complexity to determine the retrieval strategy
     """
@@ -60,7 +60,7 @@ def router_query(state: GraphState) -> Dict:
     llm = get_routing_client();
 
     try:
-        response = llm.generate_json(
+        response =await llm.agenerate_json(
             prompt=user_prompt,
             system_prompt=system_prompt
         )

@@ -10,7 +10,7 @@ from typing import Dict
 from backend.agents.state import GraphState, AgentStep
 from backend.services.llm_client import get_analysis_client
 
-def analyze_and_synthesize(state: GraphState) -> Dict:
+async def analyze_and_synthesize(state: GraphState) -> Dict:
     """
     Synthesize a coherent answer from the retrieved documents.
 
@@ -102,7 +102,7 @@ def analyze_and_synthesize(state: GraphState) -> Dict:
     llm = get_analysis_client()
 
     try:
-        response = llm.generate_json(
+        response = await llm.agenerate_json(
             prompt=user_prompt,
             system_prompt=system_prompt
         )

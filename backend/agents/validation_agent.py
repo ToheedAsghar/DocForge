@@ -12,7 +12,7 @@ from backend.config import settings
 from backend.agents.state import GraphState, AgentStep
 from backend.services.llm_client import get_validation_client
 
-def validate_answer(state: GraphState) -> Dict:
+async def validate_answer(state: GraphState) -> Dict:
     """
     Fact-check the synthesized answer against the source documents.
 
@@ -119,7 +119,7 @@ def validate_answer(state: GraphState) -> Dict:
     # execute validation
     llm = get_validation_client()
     try:
-        response = llm.generate_json(
+        response = await llm.agenerate_json(
             prompt=user_prompt,
             system_prompt=system_prompt
         )

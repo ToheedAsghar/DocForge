@@ -84,40 +84,44 @@ def skip_validation_node(state: GraphState) -> dict:
         "agent_steps": [step]
     }
 
-def create_graph():
-    graph = StateGraph(GraphState)
+_compiled_graph = None
 
-    # add nodes
-    graph.add_node("ROUTER_NODE", router_query)
-    graph.add_node("RETRIEVER_NODE", retrieve_documents)
-    graph.add_node("ANALYSIS_NODE", analyze_and_synthesize)
-    graph.add_node("VALIDATION_NODE", validate_answer)
-    graph.add_node("SKIP_VALIDATION_NODE", skip_validation_node)
+def get_graph():
+    global _compiled_graph
+    if _compiled_graph is None:
+        graph = StateGraph(GraphState) 
 
-    # set entry point
-    graph.set_entry_point("ROUTER_NODE")
-    
-    # add edges
-    graph.add_edge("ROUTER_NODE", "RETRIEVER_NODE")
-    graph.add_edge("RETRIEVER_NODE", "ANALYSIS_NODE")
+        # add nodes
+        graph.add_node("ROUTER_NODE", router_query)
+        graph.add_node("RETRIEVER_NODE", retrieve_documents)
+        graph.add_node("ANALYSIS_NODE", analyze_and_synthesize)
+        graph.add_node("VALIDATION_NODE", validate_answer)
+        graph.add_node("SKIP_VALIDATION_NODE", skip_validation_node)
 
-    graph.add_conditional_edges('ANALYSIS_NODE', should_validate, 
-    {
-        "VALIDATION_NODE": "VALIDATION_NODE",
-        "SKIP_VALIDATION_NODE": "SKIP_VALIDATION_NODE"
-    })
+        # set entry point
+        graph.set_entry_point("ROUTER_NODE")
+        
+        # add edges
+        graph.add_edge("ROUTER_NODE", "RETRIEVER_NODE")
+        graph.add_edge("RETRIEVER_NODE", "ANALYSIS_NODE")
 
-    graph.add_edge("SKIP_VALIDATION_NODE", END)
-    
-    graph.add_conditional_edges("VALIDATION_NODE", validation_routing, {
-        "END": END,
-        "RETRIEVER_NODE": "RETRIEVER_NODE"
-    })
+        graph.add_conditional_edges('ANALYSIS_NODE', should_validate, 
+        {
+            "VALIDATION_NODE": "VALIDATION_NODE",
+            "SKIP_VALIDATION_NODE": "SKIP_VALIDATION_NODE"
+        })
 
-    compiled_graph = graph.compile()
-    return compiled_graph
+        graph.add_edge("SKIP_VALIDATION_NODE", END)
+        
+        graph.add_conditional_edges("VALIDATION_NODE", validation_routing, {
+            "END": END,
+            "RETRIEVER_NODE": "RETRIEVER_NODE"
+        })
 
-def run_graph(query: str, user_id: str = None, use_cache: bool = True) -> GraphState:
+        _compiled_graph = graph.compile()
+    return _compiled_graph
+
+async def run_graph(query: str, user_id: str = None, use_cache: bool = True) -> GraphState:
     """
     EXECUTE THE COMPLETE WORKFLOW FOR THE QUERY WITH CACHE
     """
@@ -149,15 +153,26 @@ def run_graph(query: str, user_id: str = None, use_cache: bool = True) -> GraphS
     print(f"[INFO]\tStarting RAG Workflow for Query: {query[:50]}...")
 
     start_time = time.time()
-    graph = create_graph()
-    final_state = graph.invoke(INITIAL_STATE)
+    graph = get_graph()
+    final_state = await graph.ainvoke(INITIAL_STATE)
     end_time = time.time()
     latency_ms = (end_time - start_time) * 1000
 
     llm = get_llm_client()
 
     final_state['latency_ms'] = latency_ms
-    final_state['total_tokens_used'] = llm.get_token_usage()
+
+    # aggregate token usage from all clients
+    from backend.services.llm_client import get_routing_client, get_analysis_client, get_validation_client
+
+    total_tokens = 0
+    for client_getter in [get_routing_client, get_analysis_client, get_validation_client]:
+        try:
+            total_tokens += client_getter().get_token_usage()
+        except:
+            pass
+
+    final_state['total_tokens_used'] = total_tokens
 
     if use_cache:
         cache = get_cache_service()

@@ -12,6 +12,7 @@ USAGE:
 
 import os
 import sys
+import asyncio
 from pathlib import Path
 
 # Add backend to path
@@ -107,7 +108,7 @@ def main():
         print("-" * 60)
         
         try:
-            result = run_graph(question)
+            result = asyncio.run(run_graph(question))
             
             print(f"\nAnswer:")
             print(result['fact_checked_answer'])
@@ -144,7 +145,7 @@ def main():
             
             print("\n🤔 Processing...\n")
             
-            result = run_graph(question)
+            result = asyncio.run(run_graph(question))
             
             print("Answer:")
             print(result['fact_checked_answer'])
@@ -185,14 +186,12 @@ def main():
     
     # ========== Final Summary ==========
     print("\n" + "="*60)
-    print("✅ TEST COMPLETE")
+    print("[INFO]\t--- TEST COMPLETE ---")
     print("="*60)
-    print("\nYour resume RAG system is working!")
+    print("\nYour RAG system is working!")
     print("\nWhat you can do now:")
-    print("  1. Add more documents to your resume folder")
+    print("  1. Add more documents to your documents folder")
     print("  2. Re-run this script to update the index")
-    print("  3. Ask any questions about your background")
-    print("  4. Use this system in job applications or interviews")
     print("\n" + "="*60 + "\n")
 
 
