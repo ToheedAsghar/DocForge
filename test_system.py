@@ -18,18 +18,24 @@ from pathlib import Path
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
 
+
 def main():
     """Main test function."""
     
     print("\n" + "="*60)
-    print("📄 RESUME RAG SYSTEM TEST")
+    print("DOCFORGE")
     print("="*60 + "\n")
     
     # ========== STEP 1: Check Environment ==========
     print("Step 1: Checking environment variables...")
     
-    if not os.getenv("OPENAI_API_KEY"):
-        print("❌ Error: OPENAI_API_KEY not found")
+    llm_provider = os.getenv("LLM_PROVIDER", "gpt").lower()
+    if llm_provider == "gpt" and not os.getenv("OPENROUTER_API_KEY"):
+        print("❌ Error: OPENROUTER_API_KEY not found")
+        print("   Please add it to your .env file")
+        return
+    elif llm_provider == "gemini" and not os.getenv("GEMINI_API_KEY"):
+        print("❌ Error: GEMINI_API_KEY not found")
         print("   Please add it to your .env file")
         return
     
@@ -38,22 +44,21 @@ def main():
         print("   Please add it to your .env file")
         return
     
-    print("✅ Environment variables found\n")
+    print("[INFO]\tEnvironment variables found\n")
     
     # ========== STEP 2: Get Resume Folder Path ==========
-    resume_folder = input("Enter the path to your resume folder (or press Enter for './documents'): ").strip()
+    documents_folder = input("Enter the path to your resume folder (or press Enter for './documents'): ").strip()
     
-    if not resume_folder:
-        resume_folder = "./documents"
+    if not documents_folder:
+        documents_folder = "./documents"
     
-    resume_path = Path(resume_folder)
+    documents_path = Path(documents_folder)
     
-    if not resume_path.exists():
-        print(f"\n❌ Error: Folder '{resume_folder}' not found")
-        print(f"   Please create it and add your resume file(s)")
+    if not documents_path.exists():
+        print(f"\n[ERROR]\tFolder '{documents_folder}' not found, Please create it and add your resume file(s)")
         return
     
-    print(f"\n✅ Found folder: {resume_folder}\n")
+    print(f"\n[INFO]\tFound folder: {documents_folder}\n")
     
     # ========== STEP 3: Ingest Resume ==========
     print("Step 2: Ingesting your resume into Pinecone...")
@@ -63,19 +68,19 @@ def main():
     
     try:
         stats = ingest_documents(
-            dir_path=resume_folder,
+            dir_path=documents_folder,
             chunk_size=800,  # Smaller chunks for resume (more precise)
             chunk_overlap=150,
             recursive=True
         )
         
-        print("\n✅ Ingestion complete!")
+        print("\nIngestion complete!")
         print(f"   Documents loaded: {stats['documents_loaded']}")
         print(f"   Chunks created: {stats['chunks_created']}")
         print(f"   Chunks uploaded to Pinecone: {stats['chunks_uploaded']}\n")
         
         if stats['chunks_uploaded'] == 0:
-            print("⚠️  No chunks were uploaded. Please check if your resume file is in a supported format:")
+            print("[ERROR]\tNo chunks were uploaded. Please check if your resume file is in a supported format:")
             print("   Supported: .pdf, .docx, .txt, .md, .html")
             return
         
@@ -140,10 +145,10 @@ def main():
                 continue
             
             if question.lower() in ['quit', 'exit', 'q']:
-                print("\n👋 Goodbye!\n")
+                print("\nGoodbye!\n")
                 break
             
-            print("\n🤔 Processing...\n")
+            print("\nProcessing...\n")
             
             result = asyncio.run(run_graph(question))
             
@@ -198,7 +203,7 @@ def main():
 if __name__ == "__main__":
     # Check if .env file exists
     if not Path(".env").exists():
-        print("\n⚠️  WARNING: .env file not found!")
+        print("\n[INFO]\tWARNING: .env file not found!")
         print("\nPlease create a .env file with:")
         print("OPENAI_API_KEY=your-key-here")
         print("PINECONE_API_KEY=your-key-here")
