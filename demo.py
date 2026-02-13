@@ -17,6 +17,7 @@ USAGE:
 
 import os
 import sys
+import asyncio
 from dotenv import load_dotenv
 from pathlib import Path
 from typing import Optional
@@ -88,9 +89,14 @@ def check_setup() -> bool:
     
     print_header("💬 TECHDOC INTELLIGENCE - Interactive Demo")
     
-    # Check environment
-    if not os.getenv("OPENAI_API_KEY"):
-        print_error("OPENAI_API_KEY not found in environment")
+    # Check environment - need either OpenRouter or Gemini key depending on provider
+    llm_provider = os.getenv("LLM_PROVIDER", "gpt").lower()
+    if llm_provider == "gpt" and not os.getenv("OPENROUTER_API_KEY"):
+        print_error("OPENROUTER_API_KEY not found in environment")
+        print("   Create a .env file with your API keys")
+        return False
+    elif llm_provider == "gemini" and not os.getenv("GEMINI_API_KEY"):
+        print_error("GEMINI_API_KEY not found in environment")
         print("   Create a .env file with your API keys")
         return False
     
@@ -201,7 +207,7 @@ def show_cache_stats():
         print_error(f"Failed to get cache stats: {str(e)}")
 
 
-def process_query(query: str, show_details: bool = False) -> Optional[dict]:
+async def process_query(query: str, show_details: bool = False) -> Optional[dict]:
     """
     Process a user query through the RAG system.
     
@@ -219,7 +225,7 @@ def process_query(query: str, show_details: bool = False) -> Optional[dict]:
         print(f"\n{Colors.GRAY}🤔 Thinking...{Colors.RESET}\n")
         
         # Run the query
-        result = run_graph(query)
+        result = await run_graph(query)
         
         # Display answer
         answer = result.get('fact_checked_answer', 'No answer generated')
@@ -285,7 +291,7 @@ def show_query_details(result: dict):
 
     print()
 
-def chat_loop():
+async def chat_loop():
     """
     Main interactive chat loop.
     PROCESS:
@@ -343,7 +349,7 @@ def chat_loop():
                 continue
             
             # Process as query
-            last_result = process_query(user_input)
+            last_result = await process_query(user_input)
             
         except KeyboardInterrupt:
             print(f"\n\n{Colors.GREEN}👋 Goodbye!{Colors.RESET}\n")
@@ -360,7 +366,7 @@ def chat_loop():
 
 def main():
     try:
-        chat_loop()
+        asyncio.run(chat_loop())
     except Exception as e:
         print_error(f"Fatal error: {str(e)}")
         import traceback

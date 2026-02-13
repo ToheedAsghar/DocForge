@@ -43,13 +43,15 @@ async def retrieve_documents(state: GraphState) -> Dict:
     # Adaptive Retrieval Strategy for Retries
     retrieval_strategy = "semantic" # Default: Vector Similarity Search
     
-    min_score_map = {
-        "simple_lookup": 0.40,
-        "complex_reasoning": 0.20,
-        "multi_hop": 0.10
-    }
+    # min_score_map = {
+    #     "simple_lookup": 0.40,
+    #     "complex_reasoning": 0.20,
+    #     "multi_hop": 0.10
+    # }
     
-    min_score = min_score_map.get(query_type,settings.RELEVANCE_THRESHOLD)
+    # min_score = min_score_map.get(query_type,settings.RELEVANCE_THRESHOLD)
+
+    min_score = settings.RELEVANCE_THRESHOLD;
 
     if retry_cnt > 0:
         print(f"[INFO]\tRetry# {retry_cnt}, adapting strategy...")
