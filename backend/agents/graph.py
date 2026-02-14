@@ -6,9 +6,12 @@ JOB: Define how agents are connected and how data flows between them.
 
 import time
 from typing import Literal
+from backend.logger import get_logger
 from backend.config import settings
 from backend.services.llm_client import get_llm_client
 from langgraph.graph import StateGraph, END
+
+logger = get_logger(__name__)
 from backend.agents.routing_agent import router_query
 from backend.agents.state import GraphState, AgentStep
 from backend.agents.validation_agent import validate_answer
@@ -38,10 +41,10 @@ def should_validate(state: GraphState) -> Literal["VALIDATION_NODE", "SKIP_VALID
     no_critical_gaps = len(info_gaps) == 0 or all('incomplete' not in gap.lower() and 'missing' not in gap.lower() for gap in info_gaps)
 
     if high_retrieval_score and enough_sources and no_critical_gaps:
-        print(f"[INFO]\tHigh confidence (avg_score={avg_score:.2f}, sources={len(chunks)}) - SKIPPING validation")
+        logger.info(f"High confidence (avg_score={avg_score:.2f}, sources={len(chunks)}) - SKIPPING validation")
         return 'SKIP_VALIDATION_NODE'
     else:
-        print(f"[INFO]\tRunning validation (avg_score={avg_score:.2f}, sources={len(chunks)}, gaps={len(info_gaps)})")
+        logger.info(f"Running validation (avg_score={avg_score:.2f}, sources={len(chunks)}, gaps={len(info_gaps)})")
         return "VALIDATION_NODE"
 
 
@@ -59,14 +62,14 @@ def validation_routing(state: GraphState) -> Literal["END", "RETRIEVER_NODE"]:
     """
 
     if validation_passed:
-        print(f"[INFO]\tValidation Passed. Ending Workflow.")
+        logger.info("Validation Passed. Ending Workflow.")
         return "END"
     
     if retry_cnt >= settings.MAX_RETRIES:
-        print(f"[INFO]\tMAX retries reached. Returning to corrected answer.")
+        logger.info("MAX retries reached. Returning to corrected answer.")
         return "END"
     else:
-        print(f"[INFO]\tWill Retry Retrieval (attempt {retry_cnt+1})")
+        logger.info(f"Will Retry Retrieval (attempt {retry_cnt+1})")
         return "RETRIEVER_NODE"
 
 def skip_validation_node(state: GraphState) -> dict:
@@ -133,14 +136,14 @@ async def run_graph(query: str, user_id: str = None, use_cache: bool = True) -> 
         result = cache.get(query)
 
         if result:
-            print(f"[INFO]\tReturning cached result for: {query[:50]}...")
-            print(f"[INFO]\tSkipping workflow execution.")
+            logger.info(f"Returning cached result for: {query[:50]}...")
+            logger.info("Skipping workflow execution.")
 
             result['_from_cache'] = True
             result['query'] = query
             return result
 
-    print(f"[INFO]\tNo cached result found. Running workflow...")
+    logger.info("No cached result found. Running workflow...")
 
     INITIAL_STATE = GraphState(
         query=query,
@@ -150,7 +153,7 @@ async def run_graph(query: str, user_id: str = None, use_cache: bool = True) -> 
         latency_ms=0.0
     )
 
-    print(f"[INFO]\tStarting RAG Workflow for Query: {query[:50]}...")
+    logger.info(f"Starting RAG Workflow for Query: {query[:50]}...")
 
     start_time = time.time()
     graph = get_graph()
@@ -176,20 +179,19 @@ async def run_graph(query: str, user_id: str = None, use_cache: bool = True) -> 
 
     if use_cache:
         cache = get_cache_service()
-        print(f"[INFO]\tCaching result...")
+        logger.info("Caching result...")
 
         if final_state.get('validation_passed', False) or final_state.get('retry_cnt', 0) >= settings.MAX_RETRIES - 1:
-            print(f"[INFO]\tValidation passed. Caching result...")
+            logger.info("Validation passed. Caching result...")
             cache.set(query, dict(final_state))
         else:
-            print(f"[INFO]\tValidation failed. Not caching result.")
+            logger.info("Validation failed. Not caching result.")
 
-    print(f"[INFO]\tWorkflow Completed in {latency_ms:.2f}ms")
-    print(f"[INFO]\tTotal Tokens Used: {final_state['total_tokens_used']}")
-    print(f"[INFO]\tRetry Count: {final_state['retry_cnt']}")
-    print(f"[INFO]\tDocuments Retrieved: {len(final_state['retrieved_chunks'])}")
-    print(f"[INFO]\tValidation Passed: {final_state['validation_passed']}")
-    print(f"[INFO]\tAgent Steps: {len(final_state['agent_steps'])}")
-    print(f"[INFO]\tFinal Answer: {final_state['synthesized_answer'][:100]}...")
-
+    logger.info(f"Workflow Completed in {latency_ms:.2f}ms")
+    logger.info(f"Total Tokens Used: {final_state['total_tokens_used']}")
+    logger.info(f"Retry Count: {final_state['retry_cnt']}")
+    logger.info(f"Documents Retrieved: {len(final_state['retrieved_chunks'])}")
+    logger.info(f"Validation Passed: {final_state['validation_passed']}")
+    logger.info(f"Agent Steps: {len(final_state['agent_steps'])}")
+    logger.info(f"Final Answer: {final_state['synthesized_answer'][:100]}...")
     return final_state

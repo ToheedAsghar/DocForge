@@ -1,31 +1,32 @@
 import time
 import asyncio
 from backend.agents.graph import run_graph
+from backend.logger import get_logger
+from backend.spinner import Spinner
+
+logger = get_logger(__name__)
 
 async def main():
     # First query (no cache)
-    print("First query (cold cache)...")
+    logger.info("First query (cold cache)...")
     start = time.time()
-    result1 = await run_graph("What's Manus in detail of more than 500 characters?")
+    async with Spinner("Running first query (cold cache)..."):
+        result1 = await run_graph("What's Manus in detail of more than 500 characters?")
     time1 = time.time() - start
-    print(f"Time: {time1:.2f}s")
+    logger.info(f"Time: {time1:.2f}s")
 
-    print(f"\n\n\n\n\n")
-    print(f"[INFO]\tResult: {result1.get('synthesized_answer', 'No answer generated')}")
-    print(f"\n\n\n\n\n")
+    print(result1.get('synthesized_answer', 'No answer generated'))
 
     # Second query (with cache)
-    print("\nSecond query (warm cache)...")
+    logger.info("Second query (warm cache)...")
     start = time.time()
-    result2 = await run_graph("What's Manus in detail of more than 500 characters?")
+    async with Spinner("Running second query (warm cache)...", style="dots"):
+        result2 = await run_graph("What's Manus in detail of more than 500 characters?")
     time2 = time.time() - start
-    print(f"Time: {time2:.2f}s")
+    logger.info(f"Time: {time2:.2f}s")
+    logger.info(f"Speedup: {time1/time2:.1f}x faster!")
+    logger.info(f"From cache: {result2.get('_from_cache', False)}")
 
-    print(f"\nSpeedup: {time1/time2:.1f}x faster!")
-    print(f"From cache: {result2.get('_from_cache', False)}")
-
-    print(f"\n\n\n\n\n")
-    print(f"[INFO]\tResult: {result2.get('synthesized_answer', 'No answer generated')}")
-    print(f"\n\n\n\n\n")
+    print(result2.get('synthesized_answer', 'No answer generated'))
 
 asyncio.run(main())

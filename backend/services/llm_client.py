@@ -7,7 +7,10 @@ Automatically selects provider based on configuration.
 import json
 import re
 from backend.config import settings
+from backend.logger import get_logger
 from typing import Optional, Dict, Any, Literal
+
+logger = get_logger(__name__)
 
 from backend.services.gemini_model import GeminiModel
 from backend.services.gpt_model import GPTModel
@@ -52,7 +55,7 @@ class LLMClient:
         else:
             raise ValueError(f"Unknown LLM provider: {self.provider}. Use 'gemini' or 'gpt'.")
 
-        print(f"[LLM CLIENT]\tInitialized with provider: {self.provider}")
+        logger.info(f"LLM Client initialized with provider: {self.provider}")
 
     def _get_task_model(self, task:  TaskType) -> Optional[str]:
         """Get the model name for a specific task."""
@@ -101,7 +104,7 @@ class LLMClient:
             self.total_tokens_used = self._model.get_token_usage()
             return response
         except Exception as e:
-            print(f"[LLM ERROR]\t{str(e)}")
+            logger.error(f"LLM error: {str(e)}")
             raise
 
     async def agenerate(
@@ -133,7 +136,7 @@ class LLMClient:
             self.total_tokens_used = self._model.get_token_usage()
             return response
         except Exception as e:
-            print(f"[LLM ERROR]\t{str(e)}")
+            logger.error(f"LLM error: {str(e)}")
             raise
     
     def generate_json(

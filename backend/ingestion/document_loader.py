@@ -10,6 +10,9 @@ import re
 from pathlib import Path
 from pydantic import FilePath
 from typing import List, Dict, Optional
+from backend.logger import get_logger
+
+logger = get_logger(__name__)
 
 class Document:
     """
@@ -60,14 +63,14 @@ class DocumentLoader:
         directory = Path(dir_path)
 
         if not directory.exists():
-            print(f"[ERROR]\tDirectory not found: {dir_path}")
+            logger.error(f"Directory not found: {dir_path}")
             raise FileNotFoundError(f"Directory not found {dir_path}")
         
         if not directory.is_dir():
-            print(f"[ERROR]\tNot a directory: {dir_path}")
+            logger.error(f"Not a directory: {dir_path}")
             raise NotADirectoryError(f"Not a directory: {dir_path}")
 
-        print(f"[INFO]\tLoading documents from {directory}...")
+        logger.info(f"Loading documents from {directory}...")
         
         all_files = []
 
@@ -79,7 +82,7 @@ class DocumentLoader:
         else:
             all_files = [f for f in directory.iterdir() if f.is_file()]
 
-        print(f"[INFO]\tFound {len(all_files)} files to process.")
+        logger.info(f"Found {len(all_files)} files to process.")
 
         supported_documents = []
 
@@ -89,7 +92,7 @@ class DocumentLoader:
             if extension in self.loaders:
                 supported_documents.append(file_path)
             
-        print(f"[INFO]\tFound {len(supported_documents)} supported documents.")
+        logger.info(f"Found {len(supported_documents)} supported documents.")
 
         # process each document and extract text from it
 
@@ -98,28 +101,28 @@ class DocumentLoader:
 
         for i, filepath in enumerate(supported_documents, 1):
             try:
-                print(f"[INFO]\tProcessing Document {i} of {len(supported_documents)}: {filepath.name}...")
+                logger.info(f"Processing Document {i} of {len(supported_documents)}: {filepath.name}...")
     
                 doc = self.load_file(str(filepath))
                 documents.append(doc)
 
-                print(f"[INFO] Successfully loaded {len(doc.content)} characters from {filepath.name}")            
+                logger.info(f"Successfully loaded {len(doc.content)} characters from {filepath.name}")            
             except Exception as e:
-                print(f"[ERROR]\tFailed to load {filepath.name}: {str(e)}")
+                logger.error(f"Failed to load {filepath.name}: {str(e)}")
                 errors.append(str(e))
 
         # summary
-        print(f"\n{'='*60}")
+        logger.info("=" * 60)
         
         
         if 0 != len(errors):
-            print(f"[WARNING]\tFailed to load {len(errors)} documents.")
-            print(f"[WARNING]\tErrors: {', '.join(errors)}")
+            logger.warning(f"Failed to load {len(errors)} documents.")
+            logger.warning(f"Errors: {', '.join(errors)}")
        
-        print(f"[INFO]\tDOCUMENT LOADING SUMMARY")
-        print(f"[INFO]\tTotal Documents Loaded: {len(documents)}")
-        print(f"[INFO]\tTotal Characters Loaded: {sum(len(doc.content) for doc in documents)}")
-        print(f"[INFO]\tTotal Errors: {len(errors)}")
+        logger.info("DOCUMENT LOADING SUMMARY")
+        logger.info(f"Total Documents Loaded: {len(documents)}")
+        logger.info(f"Total Characters Loaded: {sum(len(doc.content) for doc in documents)}")
+        logger.info(f"Total Errors: {len(errors)}")
 
         return documents
 
@@ -131,13 +134,13 @@ class DocumentLoader:
         path = FilePath(file_path)
 
         if not path.exists():
-            print(f"[ERROR]\tFile not found: {file_path}")
+            logger.error(f"File not found: {file_path}")
             raise FileNotFoundError(f"File not found: {file_path}")
         
         extension = path.suffix.lower()
 
         if extension not in self.loaders:
-            print(f"[ERROR]\tUnsupported file type: {extension}")
+            logger.error(f"Unsupported file type: {extension}")
             raise ValueError(f"Unsupported file type: {extension}")
         
         loader_method = self.loaders[extension]
@@ -171,7 +174,7 @@ class DocumentLoader:
                     
             content = "\n\n".join(content_parts)
         except Exception as e:
-            print(f"[ERROR]\tFailed to load PDF file: {path}: {str(e)}")
+            logger.error(f"Failed to load PDF file: {path}: {str(e)}")
             raise RuntimeError(f"Failed to load PDF file: {path}: {str(e)}")
 
         content = self._clean_text(content)

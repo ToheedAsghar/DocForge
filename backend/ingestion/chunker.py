@@ -17,6 +17,9 @@ We'll use the Sliding Window Technique to create chunks:
 
 from typing import List, Dict
 import re
+from backend.logger import get_logger
+
+logger = get_logger(__name__)
 
 class TextChunk:
     """
@@ -61,14 +64,14 @@ class TextChunker:
         """Initialize the Chunker"""
 
         if chunk_overlap >= chunk_size:
-            print(f"[WARNING]\tChunk overlap ({chunk_overlap}) is greater than or equal to chunk size ({chunk_size}). This will result in no overlap.")
+            logger.warning(f"Chunk overlap ({chunk_overlap}) is greater than or equal to chunk size ({chunk_size}). This will result in no overlap.")
             raise ValueError("Chunk overlap must be less than chunk size.")
 
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         self.length_function = length_function
 
-        print(f"[INFO]\tText Chunker Initialized")
+        logger.info("Text Chunker Initialized")
     
     def chunk_text(self, text: str, metadata: Dict[str, str]) -> List[TextChunk]:
         """Splits texts into overlapping chunks
@@ -82,16 +85,16 @@ class TextChunker:
         """
 
         if not text or not text.split():
-            print(f"[WARNING]\tEmpty text provided. Returning empty chunks.")
+            logger.warning("Empty text provided. Returning empty chunks.")
             return []
 
         sentences = self._split_into_sentence(text)
 
         if not sentences:
-            print(f"[WARNING]\tNo sentences found in the text. Returning empty chunks.")
+            logger.warning("No sentences found in the text. Returning empty chunks.")
             return []
 
-        print(f"[INFO]\tChunking {len(text)} characters into chunks...")
+        logger.info(f"Chunking {len(text)} characters into chunks...")
 
         chunks = []
         current_chunk = []
@@ -128,7 +131,7 @@ class TextChunker:
             chunk_text = " ".join(current_chunk)
             chunks.append(chunk_text)
         
-        print(f"[INFO]\tCreated {len(chunks)} chunks")
+        logger.info(f"Created {len(chunks)} chunks")
         
         # WHAT: Wrap each chunk with metadata
         # WHY: Need to track which chunk came from which document
@@ -176,7 +179,7 @@ class TextChunker:
         3. return combined list
         """
 
-        print(f"[INFO]\tChunking {len(documents)} documents...")
+        logger.info(f"Chunking {len(documents)} documents...")
 
         all_chunks = []
 
@@ -187,7 +190,7 @@ class TextChunker:
             chunks = self.chunk_text(doc.content, doc.metadata)
             all_chunks.extend(chunks)
         
-        print(f"[INFO]\tCreated {len(all_chunks)} chunks from {len(documents)} documents")
+        logger.info(f"Created {len(all_chunks)} chunks from {len(documents)} documents")
 
         return all_chunks
         

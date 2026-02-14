@@ -12,10 +12,13 @@ PROCESS:
 
 from pathlib import Path
 from typing import List, Optional
+from backend.logger import get_logger
 from backend.services.vector_store import get_vector_store
 from backend.ingestion.chunker import TextChunk, TextChunker
 from backend.services.embeddings import get_embedding_service
 from backend.ingestion.document_loader import DocumentLoader, Document
+
+logger = get_logger(__name__)
 
 class IngestionPipeline:
     """
@@ -38,7 +41,7 @@ class IngestionPipeline:
         # 1. loading documents
 
         if not documents:
-            print(f"[ERROR]\tNo documents found in {dir_path}")
+            logger.error(f"No documents found in {dir_path}")
             return {
                 "documents_loaded": 0,
                 "chunks_created": 0,
@@ -50,7 +53,7 @@ class IngestionPipeline:
         chunks = self.chunker.chunk_documents(documents)
 
         if not chunks:
-            print(f"[ERROR]\tNo chunks created from {len(documents)} documents")
+            logger.error(f"No chunks created from {len(documents)} documents")
 
             return {
                 "documents_loaded": len(documents),
@@ -64,7 +67,7 @@ class IngestionPipeline:
         embeddings = self.embedding_service.embed_batch(chunk_texts)
 
         if not embeddings:
-            print(f"[ERROR]\tNo embeddings generated for {len(chunk_texts)} chunks")
+            logger.error(f"No embeddings generated for {len(chunk_texts)} chunks")
 
             return {
                 "documents_loaded": len(documents),
@@ -104,13 +107,13 @@ class IngestionPipeline:
         
         # ========== STEP 6: Summary ==========
         
-        print(f"\n{'='*60}")
-        print(f"[INFO]\tINGESTION COMPLETE")
-        print(f"{'='*60}")
-        print(f"Documents loaded: {len(documents)}")
-        print(f"Chunks created: {len(chunks)}")
-        print(f"Chunks uploaded: {uploaded_count}")
-        print(f"{'='*60}\n")
+        logger.info("=" * 60)
+        logger.info("INGESTION COMPLETE")
+        logger.info("=" * 60)
+        logger.info(f"Documents loaded: {len(documents)}")
+        logger.info(f"Chunks created: {len(chunks)}")
+        logger.info(f"Chunks uploaded: {uploaded_count}")
+        logger.info("=" * 60)
         
         # Return statistics
         return {
@@ -140,14 +143,14 @@ class IngestionPipeline:
         chunks = self.chunker.chunk_text(document.content, document.metadata)
 
         if not chunks:
-            print(f"[ERROR]\tNo chunks created")
+            logger.error("No chunks created")
             return {
                 "documents_loaded": 1,
                 "chunks_created": 0,
                 "chunks_uploaded": 0
             }
         
-        print(f"[INFO]\tCreated {len(chunks)} chunks")
+        logger.info(f"Created {len(chunks)} chunks")
 
         # generate embeddings for chunks
         embeddings = self.embedding_service.embed_batch([chunk.text for chunk in chunks])
@@ -181,7 +184,7 @@ class IngestionPipeline:
         )
         uploaded_cnt = len(pinecone_vectors)
 
-        print(f"[INFO]\tUploaded {uploaded_cnt} chunks to Pinecone")
+        logger.info(f"Uploaded {uploaded_cnt} chunks to Pinecone")
 
         # return
         return {
@@ -208,9 +211,9 @@ class IngestionPipeline:
         result = self.vector_store.delete_all()
 
         if result:
-            print(f"[INFO]\tSuccessfully cleared all documents from the vector store")
+            logger.info("Successfully cleared all documents from the vector store")
         else:
-            print(f"[ERROR]\tFailed to clear all documents from the vector store")
+            logger.error("Failed to clear all documents from the vector store")
         
         return result
 

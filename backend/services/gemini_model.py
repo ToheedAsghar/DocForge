@@ -6,7 +6,10 @@ Handles all interactions with Google Gemini API using the new google-genai packa
 from google import genai
 from google.genai import types
 from backend.config import settings
+from backend.logger import get_logger
 from typing import Optional
+
+logger = get_logger(__name__)
 
 
 class GeminiModel:
@@ -58,7 +61,7 @@ class GeminiModel:
 
             return response.text
         except Exception as e:
-            print(f"[GEMINI ERROR]\t{str(e)}")
+            logger.error(f"Gemini error: {str(e)}")
             raise
 
     async def agenerate(
@@ -95,7 +98,7 @@ class GeminiModel:
 
             return response.text
         except Exception as e:
-            print(f"[GEMINI ERROR]\t{str(e)}")
+            logger.error(f"Gemini error: {str(e)}")
             raise
 
     def get_token_usage(self) -> int:

@@ -7,7 +7,10 @@ import json
 import hashlib
 from openai import OpenAI
 from backend.config import settings
+from backend.logger import get_logger
 from typing import List, Dict, Optional
+
+logger = get_logger(__name__)
 
 class EmbeddingService:
     def __init__(self) -> None:
@@ -34,9 +37,9 @@ class EmbeddingService:
                     socket_timeout=2
                 )
                 self.redis_client.ping()
-                print(f"[INFO]\tEmbedding Service connected to redis.")
+                logger.info("Embedding Service connected to redis.")
             except Exception as e:
-                print(f"[WARNING]\tEmbedding Service failed to connect to Redis: {str(e)}. Caching disabled.")
+                logger.warning(f"Embedding Service failed to connect to Redis: {str(e)}. Caching disabled.")
                 self.redis_client = None
 
         # fallback in-memory cache
@@ -91,7 +94,7 @@ class EmbeddingService:
 
             return embedding
         except Exception as e:
-            print(f"[EMBEDDING ERROR]\t{str(e)}")
+            logger.error(f"Embedding error: {str(e)}")
             raise
 
     def embed_batch(self, texts: List[str]):
@@ -139,7 +142,7 @@ class EmbeddingService:
                         self.save_to_cache(cache_key, embedding)
                     
             except Exception as e:
-                print(f"[EMBEDDING BATCH ERROR]\t{str(e)}")
+                logger.error(f"Embedding batch error: {str(e)}")
                 raise
         
         return results
