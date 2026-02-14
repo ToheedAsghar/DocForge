@@ -8,8 +8,11 @@ Looks at the user query and determines how complex it is.
 
 import time
 from typing import Dict
+from backend.logger import get_logger
 from backend.agents.state import GraphState, AgentStep
 from backend.services.llm_client import get_routing_client
+
+logger = get_logger(__name__)
 
 async def router_query(state: GraphState) -> Dict:
     """
@@ -18,9 +21,9 @@ async def router_query(state: GraphState) -> Dict:
 
     query = state["query"]
     
-    print(f"\n{'='*60}")
-    print(f"Routing Agent")
-    print(f"{'='*60}")
+    logger.info("=" * 60)
+    logger.info("Routing Agent")
+    logger.info("=" * 60)
 
     system_prompt = """You are an expert Search Optimization Specialist and Query Classifier.
     Your job is to analyze user queries, classify their complexity, and generate an optimized search query for a vector database."""
@@ -71,19 +74,18 @@ async def router_query(state: GraphState) -> Dict:
         reasoning = response.get("reasoning", "No reasoning provided")
 
     except Exception as e:
-        print(f"[ROUTING ERROR]\t{str(e)}")
+        logger.error(f"Routing error: {str(e)}")
         query_type = "COMPLEX_REASONING"
         search_query = query
         confidence = 0.5
         reasoning = "Error in classification logic, using Default."
     
     query_type = query_type.lower().replace(" ", "_")
-    print(f"[INFO]\tSEARCH QUERY: {search_query}")
-
-    print(f"Query Type:\t{query_type}")
-    print(f"Search Query:\t{search_query}")
-    print(f"Confidence:\t{confidence:.2f}")
-    print(f"Reasoning:\t{reasoning}")
+    logger.info(f"SEARCH QUERY: {search_query}")
+    logger.info(f"Query Type: {query_type}")
+    logger.info(f"Search Query: {search_query}")
+    logger.info(f"Confidence: {confidence:.2f}")
+    logger.info(f"Reasoning: {reasoning}")
 
     # creating agent record
     step = AgentStep(

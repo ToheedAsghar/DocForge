@@ -6,9 +6,12 @@ WHY: The quality of retrieval directly impacts the answer quality.
 import time
 import asyncio
 from typing import Dict
+from backend.logger import get_logger
 from backend.config import settings
 from backend.services.vector_store import get_vector_store
 from backend.agents.state import AgentStep, DocumentChunk, GraphState
+
+logger = get_logger(__name__)
 
 async def retrieve_documents(state: GraphState) -> Dict:
     """
@@ -27,9 +30,9 @@ async def retrieve_documents(state: GraphState) -> Dict:
     query_type = state["query_type"]
     retry_cnt = state["retry_cnt"]
 
-    print(f"\n{'='*60}")
-    print(f"Retrieval Agent")
-    print(f"{'='*60}")
+    logger.info("=" * 60)
+    logger.info("Retrieval Agent")
+    logger.info("=" * 60)
 
     top_k_map = {
         "simple_lookup": settings.TOP_K_SIMPLE,
@@ -54,7 +57,7 @@ async def retrieve_documents(state: GraphState) -> Dict:
     min_score = settings.RELEVANCE_THRESHOLD;
 
     if retry_cnt > 0:
-        print(f"[INFO]\tRetry# {retry_cnt}, adapting strategy...")
+        logger.info(f"Retry# {retry_cnt}, adapting strategy...")
 
         # increase documents by 50%
         top_k = int(top_k * 1.5)
@@ -64,13 +67,13 @@ async def retrieve_documents(state: GraphState) -> Dict:
 
         retrieval_strategy = "semantic_relaxed"
 
-        print(f"[INFO]\tRetrieval Strategy: {retrieval_strategy}")
-        print(f"[INFO]\tMin Score: {min_score}")
-        print(f"[INFO]\tTop K: {top_k}")
+        logger.info(f"Retrieval Strategy: {retrieval_strategy}")
+        logger.info(f"Min Score: {min_score}")
+        logger.info(f"Top K: {top_k}")
 
-    print(f"[INFO]\tRetrieving {top_k} documents for query: {search_query[:50]}...")
+    logger.info(f"Retrieving {top_k} documents for query: {search_query[:50]}...")
     if search_query != query:
-        print(f"[INFO]\t(Optimized from original: {query[:50]}...)")
+        logger.info(f"(Optimized from original: {query[:50]}...)")
 
     vector_store = get_vector_store()
     try:
@@ -84,10 +87,10 @@ async def retrieve_documents(state: GraphState) -> Dict:
             )
         )
     except Exception as e:
-        print(f"[ERROR]\tFailed to retrieve documents: {str(e)}")
+        logger.error(f"Failed to retrieve documents: {str(e)}")
         raw_results = []
 
-    print(f"[INFO]\tRetrieved {len(raw_results)} documents")
+    logger.info(f"Retrieved {len(raw_results)} documents")
 
     retrieved_chunks = []
     for i, result in enumerate(raw_results):
@@ -100,15 +103,15 @@ async def retrieve_documents(state: GraphState) -> Dict:
         retrieved_chunks.append(chunk)
 
         # log each retrieved chunk
-        print(f"[INFO]\t[{i+1}] Score: {result['score']:.3f}")
-        print(f"[INFO]\tID: {result['id']}")
-        print(f"[INFO]\tTEXT: {result['text'][:100]}...")
+        logger.info(f"[{i+1}] Score: {result['score']:.3f}")
+        logger.info(f"ID: {result['id']}")
+        logger.info(f"TEXT: {result['text'][:100]}...")
 
     # Quality check (moved outside the loop)
     if len(retrieved_chunks) == 0:
-        print(f"[WARNING]\tNo documents retrieved. Query may be too broad or unclear.")
+        logger.warning("No documents retrieved. Query may be too broad or unclear.")
     elif len(retrieved_chunks) < 3:
-        print(f"[WARNING]\tLow document count ({len(retrieved_chunks)}). Consider refining query or lowering min_score threshold.")
+        logger.warning(f"Low document count ({len(retrieved_chunks)}). Consider refining query or lowering min_score threshold.")
 
     # log agent step
     step = AgentStep(

@@ -18,13 +18,15 @@ USAGE:
 import os
 import sys
 import asyncio
-from dotenv import load_dotenv
 from pathlib import Path
 from typing import Optional
+from dotenv import load_dotenv
+from backend.spinner import Spinner
 
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
 load_dotenv()
+
 
 
 # ========== TERMINAL COLORS ==========
@@ -87,7 +89,7 @@ def check_setup() -> bool:
         True if ready, False otherwise
     """
     
-    print_header("💬 TECHDOC INTELLIGENCE - Interactive Demo")
+    print_header("TECHDOC INTELLIGENCE")
     
     # Check environment - need either OpenRouter or Gemini key depending on provider
     llm_provider = os.getenv("LLM_PROVIDER", "gpt").lower()
@@ -189,7 +191,7 @@ def show_cache_stats():
         
         stats = cache.get_stats()
         
-        print(f"\n{Colors.BOLD}💾 Cache Statistics:{Colors.RESET}")
+        print(f"\n{Colors.BOLD} Cache Statistics:{Colors.RESET}")
         print(f"   Cached queries: {stats.get('cached_queries', 0)}")
         print(f"   Memory used: {stats.get('memory_used_mb', 0):.2f} MB")
         print(f"   TTL: {stats.get('ttl_seconds', 0)} seconds")
@@ -222,10 +224,11 @@ async def process_query(query: str, show_details: bool = False) -> Optional[dict
     try:
         from backend.agents.graph import run_graph
         
-        print(f"\n{Colors.GRAY}🤔 Thinking...{Colors.RESET}\n")
+        # Run the query with animated spinner
+        async with Spinner("Thinking...", style="default"):
+            result = await run_graph(query)
         
-        # Run the query
-        result = await run_graph(query)
+        print()  # blank line after spinner clears
         
         # Display answer
         answer = result.get('fact_checked_answer', 'No answer generated')
@@ -234,15 +237,15 @@ async def process_query(query: str, show_details: bool = False) -> Optional[dict
         print(f"{answer}\n")
         
         # Show metadata badge
-        validation = "✅ Validated" if result.get('validation_passed') else "⚠️  Not validated"
-        from_cache = "💾 Cached" if result.get('_from_cache') else "🔄 Fresh"
+        validation = " Validated" if result.get('validation_passed') else " Not validated"
+        from_cache = " Cached" if result.get('_from_cache') else "🔄 Fresh"
         
         print(f"{Colors.GRAY}{validation} | {from_cache} | {result.get('latency_ms', 0):.0f}ms | {len(result.get('retrieved_chunks', []))} docs{Colors.RESET}")
         
         # Auto-show details if validation failed
         if not result.get('validation_passed'):
             show_details = True
-            print(f"\n{Colors.YELLOW}⚠️  Validation failed - showing workflow details{Colors.RESET}")
+            print(f"\n{Colors.YELLOW}  Validation failed - showing workflow details{Colors.RESET}")
         
         # Show details if requested
         if show_details:
@@ -324,7 +327,7 @@ async def chat_loop():
             command = user_input.lower()
             
             if command in ['quit', 'exit', 'q']:
-                print(f"\n{Colors.GREEN}👋 Goodbye!{Colors.RESET}\n")
+                print(f"\n{Colors.GREEN} Goodbye! {Colors.RESET}\n")
                 break
             
             elif command == 'help':
@@ -352,11 +355,11 @@ async def chat_loop():
             last_result = await process_query(user_input)
             
         except KeyboardInterrupt:
-            print(f"\n\n{Colors.GREEN}👋 Goodbye!{Colors.RESET}\n")
+            print(f"\n\n{Colors.GREEN} Goodbye!{Colors.RESET}\n")
             break
         
         except EOFError:
-            print(f"\n\n{Colors.GREEN}👋 Goodbye!{Colors.RESET}\n")
+            print(f"\n\n{Colors.GREEN} Goodbye!{Colors.RESET}\n")
             break
         
         except Exception as e:

@@ -14,7 +14,10 @@ import json
 import redis
 import hashlib
 from backend.config import settings
+from backend.logger import get_logger
 from typing import Optional, Dict, Any
+
+logger = get_logger(__name__)
 
 class CacheService:
     """
@@ -34,7 +37,7 @@ class CacheService:
         self.redis_client = None
 
         if not settings.CACHE_ENABLED:
-            print(f"[INFO]\tCache is disabled in config. Disabling cache service.")
+            logger.info("Cache is disabled in config. Disabling cache service.")
             return
         
         try:
@@ -51,17 +54,17 @@ class CacheService:
 
             # if we got here, Redis is working
             self.enabled = True
-            print(f"[INFO]\tCache service initialized and connected to Redis at {settings.REDIS_URL}")
+            logger.info(f"Cache service initialized and connected to Redis at {settings.REDIS_URL}")
 
         except redis.ConnectionError as e:
-            print(f"[ERROR]\tFailed to connect to Redis at {settings.REDIS_URL}: {str(e)}")
-            print(f"[WARNING]\tRunning with cache (queries will be show)")
+            logger.error(f"Failed to connect to Redis at {settings.REDIS_URL}: {str(e)}")
+            logger.warning("Running without cache")
             self.enabled = False
             self.redis_client = None
 
         except Exception as e:
-            print(f"[ERROR]\tUnexpected error initializing cache service: {str(e)}")
-            print(f"[WARNING]\tRunning with cache (queries will be shown)")
+            logger.error(f"Unexpected error initializing cache service: {str(e)}")
+            logger.warning("Running without cache")
             self.enabled = False
             self.redis_client = None
 
@@ -95,16 +98,16 @@ class CacheService:
             cached_data = self.redis_client.get(key)
 
             if cached_data:
-                print(f"[CACHE HIT]\tQuery: {query[:50]}...")
+                logger.info(f"CACHE HIT: {query[:50]}...")
                 result = json.loads(cached_data)
                 result['_from_cache'] = True # add metadata
                 return result
 
             else:
-                print(f"[CACHE MISS]\tQuery: {query[:50]}...")
+                logger.info(f"CACHE MISS: {query[:50]}...")
                 return None
         except json.JSONDecodeError as e:
-            print(f"[CACHE ERROR]\tFailed to parse cached data for query: {query[:50]}: {str(e)}")
+            logger.error(f"Failed to parse cached data for query: {query[:50]}: {str(e)}")
             
             # delete the corrupted entry
             try:
@@ -116,7 +119,7 @@ class CacheService:
             return None
         
         except Exception as e:
-            print(f"[CACHE ERROR]\tUnexpected error retrieving cached data for query: {query[:50]}: {str(e)}")
+            logger.error(f"Unexpected error retrieving cached data for query: {query[:50]}: {str(e)}")
             return None
 
     def set(self, query: str, result: Dict[str, Any], ttl: Optional[int] = None) -> bool:
@@ -140,11 +143,11 @@ class CacheService:
                 time=ttl
             )
 
-            print(f"[CACHE SET]\tQuery: {query[:50]}...")
+            logger.info(f"CACHE SET: {query[:50]}...")
             return True
 
         except Exception as e:
-            print(f"[CACHE ERROR]\tUnexpected error storing query result in cache: {query[:50]}: {str(e)}")
+            logger.error(f"Unexpected error storing query result in cache: {query[:50]}: {str(e)}")
             return False
     def delete(self, query: str) -> bool:
         """
@@ -161,13 +164,13 @@ class CacheService:
             deleted = self.redis_client.delete(key)
 
             if deleted:
-                print(f"[CACHE DELETED]\tQuery: {query[:50]}...")
+                logger.info(f"CACHE DELETED: {query[:50]}...")
                 return True
             else:
-                print(f"[CACHE MISS]\tQuery: {query[:50]}... Not found in cache")
+                logger.info(f"CACHE MISS: {query[:50]}... Not found in cache")
                 return False
         except Exception as e:
-            print(f"[CACHE ERROR]\tUnexpected error deleting query result from cache: {query[:50]}: {str(e)}")
+            logger.error(f"Unexpected error deleting query result from cache: {query[:50]}: {str(e)}")
             return False
         
     def clear_all(self) -> int:
@@ -183,14 +186,14 @@ class CacheService:
             keys = self.redis_client.keys('query:*')
             if keys:
                 deleted = self.redis_client.delete(*keys)
-                print(f"[CACHE CLEARED]\tCleared {len(keys)} cached queries")
+                logger.info(f"Cleared {len(keys)} cached queries")
                 return deleted
             else:
-                print(f"[CACHE EMPTY]\tNo cached queries found")
+                logger.info("No cached queries found")
                 return 0
 
         except Exception as e:
-            print(f"[CACHE ERROR]\tUnexpected error clearing all cached queries: {str(e)}")
+            logger.error(f"Unexpected error clearing all cached queries: {str(e)}")
             return 0
 
 # --- GLOBAL SINGLETON INSTANCE --- #

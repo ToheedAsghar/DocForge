@@ -7,8 +7,11 @@ JOB: Read all Retrieved Documents and Write a Coherent answer.
 import time
 from typing import Dict
 
+from backend.logger import get_logger
 from backend.agents.state import GraphState, AgentStep
 from backend.services.llm_client import get_analysis_client
+
+logger = get_logger(__name__)
 
 async def analyze_and_synthesize(state: GraphState) -> Dict:
     """
@@ -25,14 +28,14 @@ async def analyze_and_synthesize(state: GraphState) -> Dict:
     query = state["query"]
     chunks = state.get("retrieved_chunks", [])
 
-    print(f"\n{'='*60}")
-    print(f"Analysis Agent")
-    print(f"{'='*60}")
+    logger.info("=" * 60)
+    logger.info("Analysis Agent")
+    logger.info("=" * 60)
 
-    print(f"[INFO]\tAnalyzing {len(chunks)} documents for query: {query[:50]}...")
+    logger.info(f"Analyzing {len(chunks)} documents for query: {query[:50]}...")
 
     if not chunks or len(chunks) == 0:
-        print(f"[WARNING]\tNo documents retrieved. Skipping analysis.")
+        logger.warning("No documents retrieved. Skipping analysis.")
 
         return {
             "synthesized_answer": "I couldn't find any relevant documents to answer your question. Pleae try rephrasing or asking something else.",
@@ -47,7 +50,7 @@ async def analyze_and_synthesize(state: GraphState) -> Dict:
             ]
         }
 
-    print(f"[INFO]\tCombining {len(chunks)} documents into context...")
+    logger.info(f"Combining {len(chunks)} documents into context...")
 
     # if there are chunks, then combine all into one text block
     context_parts = []
@@ -64,7 +67,7 @@ async def analyze_and_synthesize(state: GraphState) -> Dict:
     separator = "\n" + "="*60 + "\n"
     context = separator.join(context_parts)
 
-    print(f"[INFO]\tContext Length: {len(context)} characters")
+    logger.info(f"Context Length: {len(context)} characters")
 
     # create synthesis prompt
     system_prompt = """You are an Expert Technical Writer and Researcher.
@@ -111,19 +114,19 @@ async def analyze_and_synthesize(state: GraphState) -> Dict:
         information_gaps = response.get("information_gaps", [])
         synthesized_confidence = response.get("confidence", 0.0)
 
-        print(f"[INFO]\tSynthesized Answer: {synthesized_answer[:100]}...")
-        print(f"[INFO]\tInformation Gaps: {information_gaps}")
-        print(f"[INFO]\tConfidence: {synthesized_confidence:.2f}")
+        logger.info(f"Synthesized Answer: {synthesized_answer[:100]}...")
+        logger.info(f"Information Gaps: {information_gaps}")
+        logger.info(f"Confidence: {synthesized_confidence:.2f}")
 
     except Exception as e:
-        print(f"[ERROR]\tFailed to synthesize answer: {str(e)}")
+        logger.error(f"Failed to synthesize answer: {str(e)}")
         synthesized_answer = "I encountered an error while synthesizing your answer. Please try again later."
         information_gaps = ["Error in synthesis process"]
         synthesized_confidence = 0.0
 
     # Quality Check
     if len(synthesized_answer) < 50:
-        print(f"[WARNING]\tSynthesized answer is too short.")
+        logger.warning("Synthesized answer is too short.")
         information_gaps.append("Answer may be incomplete")
 
     # answer keywords should appear in the answer
@@ -132,7 +135,7 @@ async def analyze_and_synthesize(state: GraphState) -> Dict:
     overlap = len(query_words & answer_words) / len(query_words) if query_words else 0
 
     if overlap < 0.3: # less than 30# of word overlap
-        print(f"[WARNING]\tLow keyword overlap ({overlap:.2f}). Answer may not be relevant.")
+        logger.warning(f"Low keyword overlap ({overlap:.2f}). Answer may not be relevant.")
         information_gaps.append("Answer may not be relevant")
 
     step = AgentStep(

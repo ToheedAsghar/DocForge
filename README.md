@@ -10,6 +10,10 @@ A <strong>Multi-Agent Retrieval-Augmented Generation (RAG) system</strong> built
 <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License">
 </p>
 
+<p align="center">
+<img src="assets/demo.gif" width="600" alt="DocForge Demo">
+</p>
+
 ## Key Features
 
 ### Multi-Agent Architecture

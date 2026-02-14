@@ -10,9 +10,12 @@ Handles:
 
 import time
 from backend.config import settings
+from backend.logger import get_logger
 from typing import List, Dict, Any, Optional
 from pinecone import Pinecone, ServerlessSpec
 from backend.services.embeddings import get_embedding_service
+
+logger = get_logger(__name__)
 
 class VectorStore:
     def __init__(self) -> None:
@@ -37,7 +40,7 @@ class VectorStore:
             existing_indexes = [index.name for index in self.pc.list_indexes()]
 
             if self.index_name not in existing_indexes:
-                print(f"[INFO]\tCreating new index: {self.index_name}")
+                logger.info(f"Creating new index: {self.index_name}")
                 self.pc.create_index(
                     name=self.index_name,
                     dimension=self.dimension,
@@ -48,17 +51,17 @@ class VectorStore:
                     )
                 )
 
-                print(f"[INFO]\tWaiting for Index to be ready...")
+                logger.info("Waiting for Index to be ready...")
                 while not self.pc.describe_index(self.index_name).status['ready']:
                     time.sleep(1)
-                print(f"[INFO]\tIndex {self.index_name} is ready!")
+                logger.info(f"Index {self.index_name} is ready!")
             else:
-                print(f"[INFO]\tUsing existing index: {self.index_name}")
+                logger.info(f"Using existing index: {self.index_name}")
 
             self.index = self.pc.Index(self.index_name)
 
         except Exception as e:
-            print(f"[ERROR]\tFailed to initialize index: {str(e)}")
+            logger.error(f"Failed to initialize index: {str(e)}")
             raise
 
     def upsert_documents(self, documents: List[dict[str, any]]) -> int:
@@ -75,7 +78,7 @@ class VectorStore:
 
         texts = [doc['text'] for doc in documents]
 
-        print(f"[INFO]\tGenerating Embedding for {len(texts)} documents ...")
+        logger.info(f"Generating Embedding for {len(texts)} documents ...")
 
         embeddings = self.embedding_service.embed_batch(texts)
 
@@ -105,12 +108,12 @@ class VectorStore:
                 )
 
                 total_upserted += len(batch)
-                print(f"[INFO]\tUpserted {len(batch)} documents to Pinecone ...")
+                logger.info(f"Upserted {len(batch)} documents to Pinecone ...")
             except Exception as e:
-                print(f"[ERROR]\tFailed to upsert batch {i//BATCH_SIZE + 1}: {str(e)}")
+                logger.error(f"Failed to upsert batch {i//BATCH_SIZE + 1}: {str(e)}")
                 raise
 
-        print(f"[INFO]\tSuccessfully upserted {total_upserted} documents to Pinecone!")
+        logger.info(f"Successfully upserted {total_upserted} documents to Pinecone!")
         return total_upserted
     
     def search(
@@ -136,14 +139,14 @@ class VectorStore:
             )
 
             # Debug: Show raw results before filtering
-            print(f"[DEBUG]\tPinecone returned {len(response.matches)} matches")
+            logger.debug(f"Pinecone returned {len(response.matches)} matches")
             for m in response.matches:
-                print(f"[DEBUG]\t  - {m.id}: score={m.score:.3f}")
+                logger.debug(f"  - {m.id}: score={m.score:.3f}")
 
             results = []
             for match in response.matches:
                 if min_score and match.score < min_score:
-                    print(f"[DEBUG]\tFiltered out {match.id} (score {match.score:.3f} < min_score {min_score})")
+                    logger.debug(f"Filtered out {match.id} (score {match.score:.3f} < min_score {min_score})")
                     continue
                 result = {
                     "id": match.id,
@@ -155,7 +158,7 @@ class VectorStore:
                 results.append(result)
 
         except Exception as e:
-            print(f"[ERROR]\tFailed to search Pinecone: {str(e)}")
+            logger.error(f"Failed to search Pinecone: {str(e)}")
             raise
 
         return results
@@ -173,7 +176,7 @@ class VectorStore:
 
             return True
         except Exception as e:
-            print(f"[ERROR]\tFailed to delete documents: {str(e)}")
+            logger.error(f"Failed to delete documents: {str(e)}")
             return False
 
     def delete_all(self) -> bool:
@@ -190,7 +193,7 @@ class VectorStore:
             )
             return True
         except Exception as e:
-            print(f"[ERROR]\tFailed to delete all documents: {str(e)}")
+            logger.error(f"Failed to delete all documents: {str(e)}")
             return False
         
     def get_stats(self) -> Dict[str, Any]:
@@ -206,7 +209,7 @@ class VectorStore:
             }
 
         except Exception as e:
-            print(f"[ERROR]\tFailed to get index stats: {str(e)}")
+            logger.error(f"Failed to get index stats: {str(e)}")
             return {}
 
 _vector_store = None

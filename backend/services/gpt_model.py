@@ -5,7 +5,10 @@ Handles all interactions with OpenAI GPT via OpenRouter.
 
 from langchain_openai import ChatOpenAI
 from backend.config import settings
+from backend.logger import get_logger
 from typing import Optional
+
+logger = get_logger(__name__)
 
 
 class GPTModel:
@@ -71,7 +74,7 @@ class GPTModel:
 
             return response.content
         except Exception as e:
-            print(f"[GPT ERROR]\t{str(e)}")
+            logger.error(f"GPT error: {str(e)}")
             raise
 
     async def agenerate(
@@ -114,7 +117,7 @@ class GPTModel:
 
             return response.content
         except Exception as e:
-            print(f"[GPT ERROR]\t{str(e)}")
+            logger.error(f"GPT error: {str(e)}")
             raise
 
     def get_token_usage(self) -> int:
