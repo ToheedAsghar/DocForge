@@ -1,7 +1,15 @@
+import logging
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from backend.config import settings
 from backend.agents.graph import run_graph
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="RAG Agent API")
 

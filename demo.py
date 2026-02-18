@@ -17,6 +17,7 @@ USAGE:
 
 import os
 import sys
+import logging
 from dotenv import load_dotenv
 from pathlib import Path
 from typing import Optional
@@ -24,6 +25,12 @@ from typing import Optional
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
 load_dotenv()
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 
 # ========== TERMINAL COLORS ==========

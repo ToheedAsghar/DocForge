@@ -12,10 +12,17 @@ USAGE:
 
 import os
 import sys
+import logging
 from pathlib import Path
 
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 def main():
     """Main test function."""

@@ -7,10 +7,14 @@ JOB: Verify that the synthesized answer is supported by the source documents.
 from __future__ import print_function
 
 import time
+import logging
 from typing import Dict, List
 from backend.config import settings
 from backend.agents.state import GraphState, AgentStep
 from backend.services.llm_client import get_validation_client
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 def validate_answer(state: GraphState) -> Dict:
     """
@@ -30,17 +34,15 @@ def validate_answer(state: GraphState) -> Dict:
     query = state.get("query", "")
     retry_cnt = state.get("retry_cnt", 0)
 
-    print(f"\n{'='*60}")
-    print(f"Validation Agent")
-    print(f"{'='*60}")
+    logger.info("Validation Agent starting validation process")
 
-    print(f"[INFO]\tValidating answer {len(answer) if answer else 0} characters")
-    print(f"[INFO]\tAgainst {len(chunks) if chunks else 0} source documents")
-    print(f"[INFO]\tRetry Count: {retry_cnt}")
+    logger.info(f"Validating answer {len(answer) if answer else 0} characters")
+    logger.info(f"Against {len(chunks) if chunks else 0} source documents")
+    logger.info(f"Retry Count: {retry_cnt}")
 
     # Edge Case
     if not answer or not chunks:
-        print(f"[WARNING]\tMissing answer or source documents. Skipping validation.")
+        logger.warning("Missing answer or source documents. Skipping validation.")
         return {
             "validation_passed": False,
             "validation_issues": ["Missing answer or source documents"],
@@ -131,14 +133,14 @@ def validate_answer(state: GraphState) -> Dict:
         validation_confidence = response.get("confidence", 0.0)
 
     except Exception as e:
-        print(f"[ERROR]\tFailed to call Validation LLM: {str(e)}")
+        logger.error(f"Failed to call Validation LLM: {str(e)}")
         # FALLBACK: Assume answer is okay if LLM Fails
         validation_passed = True
         unsupported_claims = []
         contradictions = []
         corrected_answer = answer
         validation_confidence = 0.5
-        print(f"[WARNING]\tValidation LLM failed. Using fallback values.")
+        logger.warning("Validation LLM failed. Using fallback values.")
 
     # analyze validation issues
     validation_issues = []
@@ -161,30 +163,30 @@ def validate_answer(state: GraphState) -> Dict:
         final_validation_passed = False
         final_answer = corrected_answer
 
-        print(f"[WARNING]\tValidation Failed")
-        print(f"[WARNING]\tUnsupported Claims: {len(unsupported_claims)}")
-        print(f"[WARNING]\tHigh Severity Claims: {high_severity_count}")
-        print(f"[WARNING]\tContradictions: {len(contradictions)}")
+        logger.warning("Validation Failed")
+        logger.warning(f"Unsupported Claims: {len(unsupported_claims)}")
+        logger.warning(f"High Severity Claims: {high_severity_count}")
+        logger.warning(f"Contradictions: {len(contradictions)}")
 
     else:
         final_validation_passed = True
         final_answer = answer
 
-        print(f"[INFO]\tValidation Passed")
-        print(f"[INFO]\tConfidence: {validation_confidence:.2f}")
+        logger.info("Validation Passed")
+        logger.info(f"Confidence: {validation_confidence:.2f}")
 
         if validation_issues:
-            print(f"[INFO]\tMinor Validation Issues Noted: {len(validation_issues)}")
+            logger.info(f"Minor Validation Issues Noted: {len(validation_issues)}")
 
     
     will_retry = not final_validation_passed and retry_cnt < settings.MAX_RETRIES
 
     if will_retry:
-        print(f"[INFO]\tWill Retry Retrieval (attempt {retry_cnt+1})")
+        logger.info(f"Will Retry Retrieval (attempt {retry_cnt+1})")
     elif not final_validation_passed:
-        print(f"[INFO]\tMAX retries reached. Returning to corrected answer.")
+        logger.info("MAX retries reached. Returning to corrected answer.")
     else:
-        print(f"[INFO]\tValidation Passed. No Retry Needed.")
+        logger.info("Validation Passed. No Retry Needed.")
 
     # agent step record
     action = "validation_passed" if final_validation_passed else "validation_failed"
