@@ -17,11 +17,14 @@ USAGE:
 
 import os
 import sys
+import warnings
 import asyncio
 from pathlib import Path
 from typing import Optional
 from dotenv import load_dotenv
 from backend.spinner import Spinner
+
+warnings.filterwarnings("ignore")
 
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -61,22 +64,22 @@ def print_header(text: str):
 
 def print_error(text: str):
     """Print an error message."""
-    print(f"{Colors.RED}❌ {text}{Colors.RESET}")
+    print(f"{Colors.RED} {text}{Colors.RESET}")
 
 
 def print_success(text: str):
     """Print a success message."""
-    print(f"{Colors.GREEN}✅ {text}{Colors.RESET}")
+    print(f"{Colors.GREEN} {text}{Colors.RESET}")
 
 
 def print_warning(text: str):
     """Print a warning message."""
-    print(f"{Colors.YELLOW}⚠️  {text}{Colors.RESET}")
+    print(f"{Colors.YELLOW} {text}{Colors.RESET}")
 
 
 def print_info(text: str):
     """Print an info message."""
-    print(f"{Colors.BLUE}ℹ️  {text}{Colors.RESET}")
+    print(f"{Colors.BLUE} {text}{Colors.RESET}")
 
 
 # ========== CHAT FUNCTIONS ==========
@@ -89,7 +92,7 @@ def check_setup() -> bool:
         True if ready, False otherwise
     """
     
-    print_header("TECHDOC INTELLIGENCE")
+    print_header("DOCFORGE")
     
     # Check environment - need either OpenRouter or Gemini key depending on provider
     llm_provider = os.getenv("LLM_PROVIDER", "gpt").lower()
@@ -154,7 +157,7 @@ def show_stats():
         # Vector store stats
         vector_stats = get_stats()
         
-        print(f"\n{Colors.BOLD}📊 System Statistics:{Colors.RESET}")
+        print(f"\n{Colors.BOLD}System Statistics:{Colors.RESET}")
         print(f"{Colors.CYAN}Vector Store:{Colors.RESET}")
         print(f"   Total vectors: {vector_stats.get('total_vectors', 0)}")
         print(f"   Dimension: {vector_stats.get('dimension', 0)}")
@@ -236,21 +239,6 @@ async def process_query(query: str, show_details: bool = False) -> Optional[dict
         print(f"{Colors.BOLD}{Colors.BLUE}Assistant:{Colors.RESET}")
         print(f"{answer}\n")
         
-        # Show metadata badge
-        validation = " Validated" if result.get('validation_passed') else " Not validated"
-        from_cache = " Cached" if result.get('_from_cache') else "🔄 Fresh"
-        
-        print(f"{Colors.GRAY}{validation} | {from_cache} | {result.get('latency_ms', 0):.0f}ms | {len(result.get('retrieved_chunks', []))} docs{Colors.RESET}")
-        
-        # Auto-show details if validation failed
-        if not result.get('validation_passed'):
-            show_details = True
-            print(f"\n{Colors.YELLOW}  Validation failed - showing workflow details{Colors.RESET}")
-        
-        # Show details if requested
-        if show_details:
-            show_query_details(result)
-        
         return result
         
     except Exception as e:
@@ -271,26 +259,26 @@ def show_query_details(result: dict):
     print(f"{Colors.CYAN}Time:{Colors.RESET} {result.get('latency_ms', 0):.0f}ms")
     print(f"{Colors.CYAN}Tokens:{Colors.RESET} {result.get('total_tokens_used', 0)}")
 
-    # Validation issues
-    if result.get('validation_issues'):
-        print(f"\n{Colors.YELLOW}Validation issues:{Colors.RESET}")
-        for issue in result['validation_issues'][:3]:
-            print(f"   • {issue}")
-
-    # Agent workflow
-    if result.get('agent_steps'):
-        print(f"\n{Colors.CYAN}Agent workflow:{Colors.RESET}")
-        for i, step in enumerate(result['agent_steps'], 1):
-            agent_name = step['agent_name'].replace('_', ' ').title()
-            print(f"   {i}. {Colors.GREEN}{agent_name}{Colors.RESET}: {step['action']}")
-
-    # Retrieved chunks
-    if result.get('retrieved_chunks'):
-        print(f"\n{Colors.CYAN}Top sources:{Colors.RESET}")
-        for i, chunk in enumerate(result['retrieved_chunks'][:3], 1):
-            filename = chunk.get('metadata', {}).get('filename', 'unknown')
-            score = chunk.get('score', 0)
-            print(f"   {i}. {filename} (score: {score:.3f})")
+    # # Validation issues
+    # if result.get('validation_issues'):
+    #     print(f"\n{Colors.YELLOW}Validation issues:{Colors.RESET}")
+    #     for issue in result['validation_issues'][:3]:
+    #         print(f"   • {issue}")
+    #
+    # # Agent workflow
+    # if result.get('agent_steps'):
+    #     print(f"\n{Colors.CYAN}Agent workflow:{Colors.RESET}")
+    #     for i, step in enumerate(result['agent_steps'], 1):
+    #         agent_name = step['agent_name'].replace('_', ' ').title()
+    #         print(f"   {i}. {Colors.GREEN}{agent_name}{Colors.RESET}: {step['action']}")
+    #
+    # # Retrieved chunks
+    # if result.get('retrieved_chunks'):
+    #     print(f"\n{Colors.CYAN}Top sources:{Colors.RESET}")
+    #     for i, chunk in enumerate(result['retrieved_chunks'][:3], 1):
+    #         filename = chunk.get('metadata', {}).get('filename', 'unknown')
+    #         score = chunk.get('score', 0)
+    #         print(f"   {i}. {filename} (score: {score:.3f})")
 
     print()
 
@@ -344,7 +332,7 @@ async def chat_loop():
             
             elif command == 'clear':
                 os.system('clear' if os.name == 'posix' else 'cls')
-                print_header("💬 TECHDOC INTELLIGENCE - Interactive Demo")
+                print_header("DOCFORGE - Interactive Demo")
                 continue
             
             elif command == 'details' and last_result:
