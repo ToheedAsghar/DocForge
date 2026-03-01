@@ -50,7 +50,7 @@ class EmbeddingService:
         Generate Cache Key from Text
         Uses MD5 hash to create consistent keys for identical text.
         """
-        return "emb:" + hashlib.md5(text.encode('utf-8')).hexdigest()
+        return "emb:" + hashlib.sha256(text.encode('utf-8')).hexdigest()
     
     def _get_from_cache(self, key: str) -> Optional[List[float]]:
         if self.redis_client:
